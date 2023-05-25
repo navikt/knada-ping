@@ -114,7 +114,7 @@ func checkUp(port string, hosts []string) error {
 	for _, h := range hosts {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%v:%v", h, port), timeout)
 		if err != nil {
-			log.Warnf("Host %v unreachable on port %v, error: ", h, port, err)
+			log.Errorf("Host %v unreachable on port %v, error: ", h, port, err)
 			continue
 		}
 		conn.Close()
