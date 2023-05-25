@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: knada-ping
+  namespace: knada-system
+spec:
+  schedule: 0 * * * *
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: knada-ping
+            image: europe-west1-docker.pkg.dev/knada-gcp/knada/knada-ping
+            imagePullPolicy: IfNotPresent
+            envFrom:
+              - secretRef:
+                  name: github-read-token
+          restartPolicy: OnFailure
+          concurrencyPolicy: Forbid
+          successfulJobsHistoryLimit: 1
+          failedJobsHistoryLimit: 1

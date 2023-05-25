@@ -1,0 +1,25 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+  workerPool:
+    "projects/knada-gcp/locations/europe-west1/workerPools/knada-cloudbuild-pool"
+
+serviceAccount: "projects/knada-gcp/serviceAccounts/ci-knorten-cloud-build@knada-gcp.iam.gserviceaccount.com"
+
+steps:
+- name: "gcr.io/cloud-builders/docker"
+  id: "build-image"
+  args: ["build", "-t", "europe-west1-docker.pkg.dev/$PROJECT_ID/knada/knada-ping:$SHORT_SHA", "." ]
+- name: "gcr.io/cloud-builders/docker"
+  id: "push image"
+  args: ["push", "europe-west1-docker.pkg.dev/$PROJECT_ID/knada/knada-ping:$SHORT_SHA"]
+- name: "gcr.io/cloud-builders/gke-deploy"
+  id: "deploy"
+  args:
+  - run
+  - --filename=k8s
+  - --image=europe-west1-docker.pkg.dev/$PROJECT_ID/knada/knada-ping:$SHORT_SHA
+  - --location=$_REGION
+  - --cluster=$_CLUSTER
+  - --timeout=10m0s
+images:
+- "europe-west1-docker.pkg.dev/$PROJECT_ID/knada/knada-ping:$SHORT_SHA"
