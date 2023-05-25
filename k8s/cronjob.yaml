@@ -5,11 +5,11 @@ metadata:
   namespace: knada-system
 spec:
   schedule: 0 * * * *
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      concurrencyPolicy: Forbid
-      successfulJobsHistoryLimit: 1
-      failedJobsHistoryLimit: 1
       template:
         spec:
           containers:
