@@ -89,6 +89,16 @@ func readPort(l string) string {
 }
 
 func readHost(l string) (string, error) {
+	// ignorer det som kun gjelder for managed notebooks
+	if strings.Contains(l, "(kun knada managed notebooks)") {
+		return "", errors.New("ignore")
+	}
+
+	// bruk up tjenesten for å teste wildcard hosts
+	if strings.Contains(l, "*.") {
+		l = strings.Replace(l, "*", "up", 1)
+	}
+
 	parts := strings.Split(l, " ")
 	for _, p := range parts {
 		if p != "" {
@@ -108,6 +118,7 @@ func checkUp(port string, hosts []string) error {
 			continue
 		}
 		conn.Close()
+		log.Infof("Host %v ok on port %v", h, port)
 	}
 
 	return nil
