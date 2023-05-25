@@ -7,6 +7,9 @@ spec:
   schedule: 0 * * * *
   jobTemplate:
     spec:
+      concurrencyPolicy: Forbid
+      successfulJobsHistoryLimit: 1
+      failedJobsHistoryLimit: 1
       template:
         spec:
           containers:
@@ -17,6 +20,3 @@ spec:
               - secretRef:
                   name: github-read-token
           restartPolicy: OnFailure
-          concurrencyPolicy: Forbid
-          successfulJobsHistoryLimit: 1
-          failedJobsHistoryLimit: 1
