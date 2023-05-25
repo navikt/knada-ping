@@ -86,6 +86,9 @@ func parseFile(file string) (map[string][]string, error) {
 		}
 	}
 
+	// debug: Tester feilrapportering med en host som ikke finnes
+	hostMap["22"] = append(hostMap["22"], "finnesikke.nav.no")
+
 	return hostMap, nil
 }
 
