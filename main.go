@@ -11,8 +11,20 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
+
+var (
+	infoLog *logrus.Logger
+	errLog  *logrus.Logger
+)
+
+func init() {
+	infoLog = logrus.New()
+	infoLog.SetOutput(os.Stdout)
+	errLog = logrus.New()
+	errLog.SetOutput(os.Stderr)
+}
 
 func main() {
 	ctx := context.Background()
@@ -21,17 +33,17 @@ func main() {
 
 	file, err := getFile(ctx, url, token)
 	if err != nil {
-		log.Fatal(err)
+		errLog.Fatal(err)
 	}
 
 	hostMap, err := parseFile(file)
 	if err != nil {
-		log.Fatal(err)
+		errLog.Fatal(err)
 	}
 
 	for port, hosts := range hostMap {
 		if err := checkUp(port, hosts); err != nil {
-			log.Fatal(err)
+			errLog.Fatal(err)
 		}
 	}
 }
@@ -114,11 +126,11 @@ func checkUp(port string, hosts []string) error {
 	for _, h := range hosts {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%v:%v", h, port), timeout)
 		if err != nil {
-			log.Errorf("Host %v unreachable on port %v, error: ", h, port, err)
+			errLog.Errorf("Host %v unreachable on port %v, error: ", h, port, err)
 			continue
 		}
 		conn.Close()
-		log.Infof("Host %v ok on port %v", h, port)
+		infoLog.Infof("Host %v ok on port %v", h, port)
 	}
 
 	return nil
