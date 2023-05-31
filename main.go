@@ -122,16 +122,31 @@ func readHost(l string) (string, error) {
 }
 
 func checkUp(port string, hosts []string) error {
-	timeout := 5 * time.Second
 	for _, h := range hosts {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%v:%v", h, port), timeout)
-		if err != nil {
-			errLog.Errorf("Host %v unreachable on port %v, error: ", h, port, err)
+		if err := dialWithRetry(fmt.Sprintf("%v:%v", h, port)); err != nil {
+			errLog.Errorf("Host %v unreachable on port %v: err %v", h, port, err)
 			continue
 		}
-		conn.Close()
 		infoLog.Infof("Host %v ok on port %v", h, port)
 	}
 
 	return nil
+}
+
+func dialWithRetry(host string) error {
+	numRetries := 3
+	timeout := 5 * time.Second
+
+	var conn net.Conn
+	var err error
+	for i := 0; i < numRetries; i++ {
+		conn, err = net.DialTimeout("tcp", host, timeout)
+		if err != nil {
+			continue
+		}
+		conn.Close()
+		return nil
+	}
+
+	return err
 }
