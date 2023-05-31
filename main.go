@@ -144,6 +144,7 @@ func dialWithRetry(host string) error {
 		conn, err = net.DialTimeout("tcp", host, timeout)
 		if err != nil {
 			time.Sleep(retryDelay)
+			infoLog.Infof("Retrying host %v", host)
 			continue
 		}
 		conn.Close()
