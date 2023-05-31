@@ -136,12 +136,14 @@ func checkUp(port string, hosts []string) error {
 func dialWithRetry(host string) error {
 	numRetries := 3
 	timeout := 5 * time.Second
+	retryDelay := 1 * time.Second
 
 	var conn net.Conn
 	var err error
 	for i := 0; i < numRetries; i++ {
 		conn, err = net.DialTimeout("tcp", host, timeout)
 		if err != nil {
+			time.Sleep(retryDelay)
 			continue
 		}
 		conn.Close()
