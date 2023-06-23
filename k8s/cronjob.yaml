@@ -18,5 +18,5 @@ spec:
             imagePullPolicy: IfNotPresent
             envFrom:
               - secretRef:
-                  name: github-read-token
+                  name: knada-ping
           restartPolicy: OnFailure
