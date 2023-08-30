@@ -11,7 +11,7 @@ steps:
   args: ["build", "-t", "europe-north1-docker.pkg.dev/$PROJECT_ID/knada-north/knada-ping:$SHORT_SHA", "." ]
 - name: "gcr.io/cloud-builders/docker"
   id: "push image"
-  args: ["push", "europe-north1-docker.pkg.dev/$PROJECT_ID/knada/knada-ping:$SHORT_SHA"]
+  args: ["push", "europe-north1-docker.pkg.dev/$PROJECT_ID/knada-north/knada-ping:$SHORT_SHA"]
 - name: "gcr.io/cloud-builders/gke-deploy"
   id: "deploy"
   args:
