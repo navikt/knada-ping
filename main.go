@@ -28,7 +28,7 @@ func init() {
 
 func main() {
 	ctx := context.Background()
-	url := "https://raw.githubusercontent.com/navikt/pig/master/nada/doc/knada-gcp.md"
+	url := "https://raw.githubusercontent.com/navikt/nada-internal/main/brannmur.md"
 	token := os.Getenv("GITHUB_READ_TOKEN")
 
 	file, err := getFile(ctx, url, token)
@@ -73,7 +73,7 @@ func parseFile(file string) (map[string][]string, error) {
 
 	var port string
 	for _, l := range strings.Split(file, "\n") {
-		if strings.HasPrefix(l, "###") {
+		if strings.HasPrefix(l, "##") {
 			port = readPort(l)
 			continue
 		}
