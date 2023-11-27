@@ -91,7 +91,10 @@ func checkUp(host string, port int) {
 
 	if err := dialWithRetry(fmt.Sprintf("%v:%v", host, port)); err != nil {
 		errLog.Errorf("Host %v unreachable on port %v: err %v", host, port, err)
+		return
 	}
+
+	infoLog.Infof("Host %v ok on port %v", host, port)
 }
 
 func dialWithRetry(host string) error {
