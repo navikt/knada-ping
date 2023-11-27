@@ -72,8 +72,8 @@ func checkUpForOracleHosts(hosts []any) {
 }
 
 func checkUpForHosts(hosts []any) {
-	current := host{}
 	for _, h := range hosts {
+		current := host{}
 		mapstructure.Decode(h, &current)
 		checkUp(current.Host, current.Port)
 	}
