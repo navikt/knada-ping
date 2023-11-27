@@ -60,7 +60,9 @@ func main() {
 func checkUpForOracleHosts(hosts []any) {
 	for _, h := range hosts {
 		current := oracleHost{}
-		mapstructure.Decode(h, &current)
+		if err := mapstructure.Decode(h, &current); err != nil {
+			errLog.Errorf("unable to decode oracle host %v: %v", h, err)
+		}
 		checkUp(current.Host, current.Port)
 
 		if len(current.Scan) > 0 {
@@ -74,7 +76,9 @@ func checkUpForOracleHosts(hosts []any) {
 func checkUpForHosts(hosts []any) {
 	for _, h := range hosts {
 		current := host{}
-		mapstructure.Decode(h, &current)
+		if err := mapstructure.Decode(h, &current); err != nil {
+			errLog.Errorf("unable to decode host %v: %v", h, err)
+		}
 		checkUp(current.Host, current.Port)
 	}
 }
