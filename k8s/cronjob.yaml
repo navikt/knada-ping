@@ -16,7 +16,11 @@ spec:
           - name: knada-ping
             image: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knada-ping
             imagePullPolicy: IfNotPresent
-            envFrom:
-              - secretRef:
-                  name: knada-ping
+            volumeMounts:
+              - name: onprem-firewall-map
+                mountPath: "/var/run"
           restartPolicy: OnFailure
+          volumes:
+            - name: onprem-firewall-map
+              configMap:
+                name: onprem-firewall-map

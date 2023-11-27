@@ -1,17 +1,15 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var (
@@ -26,111 +24,70 @@ func init() {
 	errLog.SetOutput(os.Stderr)
 }
 
+type host struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+type oracleHost struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+	Scan []host `json:"scan"`
+}
+
 func main() {
-	ctx := context.Background()
-	url := "https://raw.githubusercontent.com/navikt/pig/master/nada/doc/knada-gcp.md"
-	token := os.Getenv("GITHUB_READ_TOKEN")
-
-	file, err := getFile(ctx, url, token)
+	dataBytes, err := os.ReadFile("/var/run/onprem-firewall.yaml")
 	if err != nil {
 		errLog.Fatal(err)
 	}
 
-	hostMap, err := parseFile(file)
-	if err != nil {
+	var hostMap map[string][]any
+	if err := yaml.Unmarshal(dataBytes, &hostMap); err != nil {
 		errLog.Fatal(err)
 	}
 
-	for port, hosts := range hostMap {
-		if err := checkUp(port, hosts); err != nil {
-			errLog.Fatal(err)
+	for hostType, hosts := range hostMap {
+		// fmt.Println(hostType)
+		switch hostType {
+		case "oracle":
+			checkUpForOracleHosts(hosts)
+		default:
+			checkUpForHosts(hosts)
 		}
 	}
 }
 
-func getFile(ctx context.Context, url, token string) (string, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return "", fmt.Errorf("getting knada hosts file: %w", err)
-	}
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
-	client := http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return "", fmt.Errorf("performing http request, URL: %v: %w", url, err)
-	}
-
-	bodyBytes, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bodyBytes), nil
-}
-
-func parseFile(file string) (map[string][]string, error) {
-	hostMap := map[string][]string{}
-
-	var port string
-	for _, l := range strings.Split(file, "\n") {
-		if strings.HasPrefix(l, "###") {
-			port = readPort(l)
-			continue
-		}
-		if port != "" {
-			h, err := readHost(l)
-			if err != nil {
-				continue
-			}
-			hostMap[port] = append(hostMap[port], h)
-		}
-	}
-
-	return hostMap, nil
-}
-
-func readPort(l string) string {
-	parts := strings.Split(l, " ")
-	for i, val := range parts {
-		if val == "port" {
-			return parts[i+1]
-		}
-	}
-
-	return ""
-}
-
-func readHost(l string) (string, error) {
-	// ignorer det som kun gjelder for managed notebooks
-	if strings.Contains(l, "(kun knada managed notebooks)") {
-		return "", errors.New("ignore")
-	}
-
-	// bruk up tjenesten for å teste wildcard hosts
-	if strings.Contains(l, "*.") {
-		l = strings.Replace(l, "*", "up", 1)
-	}
-
-	parts := strings.Split(l, " ")
-	for _, p := range parts {
-		if p != "" {
-			return p, nil
-		}
-	}
-
-	return "", errors.New("host not found")
-}
-
-func checkUp(port string, hosts []string) error {
+func checkUpForOracleHosts(hosts []any) {
 	for _, h := range hosts {
-		if err := dialWithRetry(fmt.Sprintf("%v:%v", h, port)); err != nil {
-			errLog.Errorf("Host %v unreachable on port %v: err %v", h, port, err)
-			continue
+		current := oracleHost{}
+		mapstructure.Decode(h, &current)
+		checkUp(current.Host, current.Port)
+
+		if len(current.Scan) > 0 {
+			for _, sh := range current.Scan {
+				checkUp(sh.Host, sh.Port)
+			}
 		}
-		infoLog.Infof("Host %v ok on port %v", h, port)
+	}
+}
+
+func checkUpForHosts(hosts []any) {
+	current := host{}
+	for _, h := range hosts {
+		mapstructure.Decode(h, &current)
+		checkUp(current.Host, current.Port)
+	}
+}
+
+func checkUp(host string, port int) {
+	// bruk up tjenesten for å teste wildcard hosts
+	if strings.Contains(host, "*.") {
+		host = strings.Replace(host, "*", "up", 1)
 	}
 
-	return nil
+	if err := dialWithRetry(fmt.Sprintf("%v:%v", host, port)); err != nil {
+		errLog.Errorf("Host %v unreachable on port %v: err %v", host, port, err)
+	}
 }
 
 func dialWithRetry(host string) error {
