@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -25,14 +24,7 @@ func init() {
 }
 
 type host struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
-}
-
-type oracleHost struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
-	Scan []host `json:"scan"`
+	Port int `json:"port"`
 }
 
 func main() {
@@ -41,45 +33,13 @@ func main() {
 		errLog.Fatal(err)
 	}
 
-	var hostMap map[string][]any
+	var hostMap map[string]host
 	if err := yaml.Unmarshal(dataBytes, &hostMap); err != nil {
 		errLog.Fatal(err)
 	}
 
-	for hostType, hosts := range hostMap {
-		// fmt.Println(hostType)
-		switch hostType {
-		case "oracle":
-			checkUpForOracleHosts(hosts)
-		default:
-			checkUpForHosts(hosts)
-		}
-	}
-}
-
-func checkUpForOracleHosts(hosts []any) {
-	for _, h := range hosts {
-		current := oracleHost{}
-		if err := mapstructure.Decode(h, &current); err != nil {
-			errLog.Errorf("unable to decode oracle host %v: %v", h, err)
-		}
-		checkUp(current.Host, current.Port)
-
-		if len(current.Scan) > 0 {
-			for _, sh := range current.Scan {
-				checkUp(sh.Host, sh.Port)
-			}
-		}
-	}
-}
-
-func checkUpForHosts(hosts []any) {
-	for _, h := range hosts {
-		current := host{}
-		if err := mapstructure.Decode(h, &current); err != nil {
-			errLog.Errorf("unable to decode host %v: %v", h, err)
-		}
-		checkUp(current.Host, current.Port)
+	for host, hostConfig := range hostMap {
+		checkUp(host, hostConfig.Port)
 	}
 }
 
